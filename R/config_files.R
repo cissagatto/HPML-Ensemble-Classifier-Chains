@@ -88,13 +88,13 @@ while(w<=length(Implementation)){
     # Config file table header
     write("Config, Value", file = output.file, append = TRUE)
     
-    write("Dataset_Path, /home/elaine/Datasets", 
+    write("Dataset_Path, /Datasets", 
           file = output.file, append = TRUE)
     
     job_name = paste("ecc", Implementation.2[w], "-", 
                      ds$Name, sep = "")
     
-    folder_name = paste("/dev/shm/", job_name, sep = "")
+    folder_name = paste("/scratch/", job_name, sep = "")
     
     
     str.0 = paste("Temporary_Path, ", folder_name, sep="")

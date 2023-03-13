@@ -1,22 +1,29 @@
-###############################################################################
-# ECC                                                                         #
-# Copyright (C) 2022                                                          #
-#                                                                             #
-# This code is free software: you can redistribute it and/or modify it under  #
-# the terms of the GNU General Public License as published by the Free        #
-# Software Foundation, either version 3 of the License, or (at your option)   #
-# any later version. This code is distributed in the hope that it will be     #
-# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of      #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General    #
-# Public License for more details.                                            #
-#                                                                             #
-# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri Ferrandin  #
-# Federal University of Sao Carlos (UFSCar: https://www2.ufscar.br/) |        #
-# Campus Sao Carlos | Computer Department (DC: https://site.dc.ufscar.br/)    #
-# Program of Post Graduation in Computer Science                              #
-# (PPG-CC: http://ppgcc.dc.ufscar.br/) | Bioinformatics and Machine Learning  #
-# Group (BIOMAL: http://www.biomal.ufscar.br/)                                #                                                                                                #
-###############################################################################
+##############################################################################
+# ECC                                                                        #
+# Copyright (C) 2023                                                         #
+#                                                                            #
+# This code is free software: you can redistribute it and/or modify it under #
+# the terms of the GNU General Public License as published by the Free       #
+# Software Foundation, either version 3 of the License, or (at your option)  #
+# any later version. This code is distributed in the hope that it will be    #
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of     #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General   #
+# Public License for more details.                                           #
+#                                                                            #
+# PhD Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri       #
+# Ferrandin | Prof. Dr. Celine Vens | PhD Felipe Nakano Kenji                #
+#                                                                            #
+# Federal University of São Carlos - UFSCar - https://www2.ufscar.br         #
+# Campus São Carlos - Computer Department - DC - https://site.dc.ufscar.br   #
+# Post Graduate Program in Computer Science - PPGCC                          # 
+# http://ppgcc.dc.ufscar.br - Bioinformatics and Machine Learning Group      #
+# BIOMAL - http://www.biomal.ufscar.br                                       #
+#                                                                            #
+# Katholieke Universiteit Leuven Campus Kulak Kortrijk Belgium               #
+# Medicine Department - https://kulak.kuleuven.be/                           #
+# https://kulak.kuleuven.be/nl/over_kulak/faculteiten/geneeskunde            #
+#                                                                            #
+##############################################################################
 
 
 ###############################################################################
@@ -168,16 +175,24 @@ execute.ecc.python <- function(ds,
     val.file.name = paste(FolderSplit, "/", dataset_name, 
                             "-Split-Vl-", f , ".csv", sep="")
     
+    
     ##########################################################################
-    #setwd(FolderSplit)
-    #train = data.frame(read.csv(train.file.name))
-    #test = data.frame(read.csv(test.file.name))
-    #val = data.frame(read.csv(val.file.name))
+    setwd(FolderSplit)
+    train = data.frame(read.csv(train.file.name))
+    test = data.frame(read.csv(test.file.name))
+    val = data.frame(read.csv(val.file.name))
+    tv = rbind(train, val)
+    
+    ##########################################################################
+    labels.indices = seq(ds$LabelStart, ds$LabelEnd, by=1)
+    
+    ##########################################################################
+    mldr.teste = mldr_from_dataframe(test, labelIndices = labels.indices)
     
     ##################################################################
     # EXECUTE ECC PYTHON
     str.execute = paste("python3 ", diretorios$folderUtils,
-                        "/python/main.py ", 
+                        "/ecc-python/main.py ", 
                         train.file.name, " ",
                         val.file.name,  " ",
                         test.file.name, " ", 
@@ -194,38 +209,62 @@ execute.ecc.python <- function(ds,
       break
     }
     
-    # str.1 = paste("mv ", FolderScripts, "/y_pred.csv ", Folder.Tested.Split, sep="")
-    # str.2 = paste("mv ", FolderScripts, "/y_true.csv ", Folder.Tested.Split, sep="")
-    # print(system(str.1))
-    # print(system(str.2))
     
+    ############################################################3
     cat("\nAbrindo Predições")
     setwd(FolderSplit)
-    y_preds = data.frame(read.csv("y_pred.csv"))
+    y_probas = data.frame(read.csv("y_proba.csv"))
     y_trues = data.frame(read.csv("y_true.csv"))
     
+    #####################################################################
+    nomes.rotulos = colnames(y_trues)
     
     #####################################################################
-    cat("\nSave original and pruned predictions\n")
+    cat("\n\tUTIML Threshold\n")
+    utiml.threshold <- scut_threshold(y_probas, mldr.teste)
+    y_preds <- data.frame(as.matrix(fixed_threshold(y_probas, 
+                                                    utiml.threshold)))
+    
+    setwd(FolderSplit)
+    write.csv(y_preds, "y_predict.csv", row.names = FALSE)
+    
+    #####################################################################
+    cat("\nPlot ROC curve")
+    roc.curva(predictions = y_preds,
+              probabilities = y_probas,
+              test = mldr.teste,
+              Folder = FolderSplit)
+    
+    ##############################################
+    cat("\nInformações das predições")
+    predictions.information(nomes.rotulos=nomes.rotulos, 
+                            proba = y_probas, 
+                            preds = y_preds, 
+                            trues = y_trues, 
+                            folder = FolderSplit)
+    
+    #####################################################################
+    cat("\nSave original and pruned predictions")
     pred.o = paste(colnames(y_preds), "-pred", sep="")
     names(y_preds) = pred.o
     
     true.labels = paste(colnames(y_trues), "-true", sep="")
     names(y_trues) = true.labels
     
-    all.predictions = cbind(y_preds, y_trues)
+    proba = paste(colnames(y_probas), "-proba", sep="")
+    names(y_probas) = proba
+    
+    all.predictions = cbind(y_probas, y_preds, y_trues)
+    
     setwd(FolderSplit)
     write.csv(all.predictions, "folder-predictions.csv", row.names = FALSE)
     
-    # names files
-    nome.tr.csv = paste(dataset_name, "-Split-Tr-", f, ".csv", sep="")
-    nome.ts.csv = paste(dataset_name, "-Split-Ts-", f, ".csv", sep="")
-    nome.vl.csv = paste(dataset_name, "-Split-Vl-", f, ".csv", sep="")
     
-    unlink(nome.tr.csv)
-    unlink(nome.ts.csv)
-    unlink(nome.vl.csv)
-    
+    #########################################
+    setwd(FolderSplit)
+    unlink(train.file.name)
+    unlink(test.file.name)
+    unlink(val.file.name)
     
     # f = f + 1
     gc()
@@ -258,7 +297,6 @@ evaluate.ecc.python <- function(ds,
                                 number_cores,
                                 folderResults){
   
-  
   apagar = c(0)
   resConfMatFinal = data.frame(apagar)
   
@@ -288,7 +326,7 @@ evaluate.ecc.python <- function(ds,
     ####################################################################################
     # cat("\nAbrindo pred and true")
     setwd(FolderSplit)
-    y_pred = data.frame(read.csv("y_pred.csv"))
+    y_pred = data.frame(read.csv("y_predict.csv"))
     y_true = data.frame(read.csv("y_true.csv"))
     
     # cat("\nConvertendo em numerico")
@@ -311,8 +349,34 @@ evaluate.ecc.python <- function(ds,
     setwd(FolderSplit)
     write.csv(resConfMat, "ResConfMat.csv")
     
-    unlink("y_pred.csv")
-    unlink("y_true.csv")
+    
+    ###############################################################
+    conf.mat = data.frame(confmat$TPl, confmat$FPl,
+                          confmat$FNl, confmat$TNl)
+    names(conf.mat) = c("TP", "FP", "FN", "TN")
+    
+    # porcentagem
+    conf.mat.perc = data.frame(conf.mat/nrow(y_true))
+    names(conf.mat.perc) = c("TP.perc", "FP.perc", "FN.perc", "TN.perc")
+    
+    # calculando o total de rótulos classificados errados
+    wrong = conf.mat$FP + conf.mat$FN
+    
+    # calculando a porcentagem de rótulos classificados errados
+    wrong.perc = wrong/nrow(y_true)
+    
+    # calculando o total de rótulos classificados corretamente
+    correct = conf.mat$TP + conf.mat$TN
+    
+    # calculando a porcentagem de rótulos classificados corretamente
+    correct.perc = correct/nrow(y_true)
+    
+    conf.mat = data.frame(conf.mat, conf.mat.perc, wrong, correct, 
+                          wrong.perc, correct.perc)
+    
+    setwd(FolderSplit)
+    write.csv(conf.mat, "matrix-confusion.csv")
+    
     
     #f = f + 1
     gc()
@@ -360,6 +424,15 @@ gather.eval.ecc.python <- function(ds,
   confMatFinal = data.frame(measures)
   folds = c("")
   
+  final.proba.micro.auc = c(0)
+  final.proba.macro.auc = c(0)
+  final.proba.auc = c(0)
+  final.proba.ma.mi.auc = c(0)
+  
+  final.pred.micro.auc = c(0)
+  final.pred.macro.auc = c(0)
+  final.pred.auc = c(0)
+  
   # from fold = 1 to number_labels
   f = 1
   while(f<= number_folds){
@@ -375,6 +448,35 @@ gather.eval.ecc.python <- function(ds,
     
     folds[f] = paste("Fold-", f, sep="")
     
+    #################################
+    proba.auc = data.frame(read.csv("proba-auc.csv"))
+    names(proba.auc) = c("fold", "value")
+    final.proba.auc = rbind(final.proba.auc, proba.auc)
+    
+    proba.micro.auc = data.frame(read.csv("proba-micro-auc.csv"))
+    names(proba.micro.auc) = c("fold", "value")
+    final.proba.micro.auc = rbind(final.proba.micro.auc, proba.micro.auc)
+    
+    proba.macro.auc = data.frame(read.csv("proba-macro-auc.csv"))
+    names(proba.macro.auc) = c("fold", "value")
+    final.proba.macro.auc = rbind(final.proba.macro.auc, proba.macro.auc)
+    
+    proba.ma.mi.auc = data.frame(read.csv("y_proba_mami.csv"))
+    final.proba.ma.mi.auc = rbind(final.proba.ma.mi.auc, proba.ma.mi.auc)
+    
+    ##################
+    pred.auc = data.frame(read.csv("pred-auc.csv"))
+    names(pred.auc) = c("fold", "value")
+    final.pred.auc = rbind(final.pred.auc, pred.auc)
+    
+    pred.micro.auc = data.frame(read.csv("pred-micro-auc.csv"))
+    names(pred.micro.auc) = c("fold", "value")
+    final.pred.micro.auc = rbind(final.pred.micro.auc, pred.micro.auc)
+    
+    pred.macro.auc = data.frame(read.csv("pred-macro-auc.csv"))
+    names(pred.macro.auc) = c("fold", "value")
+    final.pred.macro.auc = rbind(final.pred.macro.auc, pred.macro.auc)
+    
     f = f + 1
     gc()
   } 
@@ -384,6 +486,42 @@ gather.eval.ecc.python <- function(ds,
   write.csv(confMatFinal, 
             paste(diretorios$folderECC, "/All-Folds-ECC.csv", sep=""),
             row.names = FALSE)
+  
+  
+  fold = seq(1, number_folds, by =1)
+  
+  final.proba.auc = final.proba.auc[-1,]
+  final.proba.auc = data.frame(fold, auc = final.proba.auc$value)
+  
+  final.proba.micro.auc = final.proba.micro.auc[-1,]
+  final.proba.micro.auc = data.frame(fold, micro.auc = final.proba.micro.auc$value)
+  
+  final.proba.macro.auc = final.proba.macro.auc[-1,]
+  final.proba.macro.auc = data.frame(fold, macro.auc = final.proba.macro.auc$value)
+  
+  final.proba.ma.mi.auc = final.proba.ma.mi.auc[-1,]
+  final.proba.ma.mi.auc = data.frame(fold, final.proba.ma.mi.auc)
+  
+  setwd(diretorios$folderECC)
+  write.csv(final.proba.auc, "proba-auc.csv", row.names = FALSE)  
+  write.csv(final.proba.macro.auc, "proba-macro-auc.csv", row.names = FALSE)  
+  write.csv(final.proba.micro.auc, "proba-micro-auc.csv", row.names = FALSE)
+  write.csv(final.proba.ma.mi.auc, "proba-ma-mi-auprc.csv", row.names = FALSE)  
+  
+  #################
+  final.pred.auc = final.pred.auc[-1,]
+  final.pred.auc = data.frame(fold, auc = final.pred.auc$value)
+  
+  final.pred.micro.auc = final.pred.micro.auc[-1,]
+  final.pred.micro.auc = data.frame(fold, micro.auc = final.pred.micro.auc$value)
+  
+  final.pred.macro.auc = final.pred.macro.auc[-1,]
+  final.pred.macro.auc = data.frame(fold, macro.auc = final.pred.macro.auc$value)
+  
+  setwd(diretorios$folderECC)
+  write.csv(final.pred.auc, "pred-auc.csv", row.names = FALSE)  
+  write.csv(final.pred.macro.auc, "pred-macro-auc.csv", row.names = FALSE)  
+  write.csv(final.pred.micro.auc, "pred-micro-auc.csv", row.names = FALSE)
   
   # calculando a média dos 10 folds para cada medida
   media = data.frame(apply(confMatFinal[,-1], 1, mean))

@@ -1,31 +1,37 @@
 rm(list=ls())
 
-###############################################################################
-# Global Partitions with Ensemble of classifier chain                         #
-# Copyright (C) 2022                                                          #
-#                                                                             #
-# This code is free software: you can redistribute it and/or modify it under  #
-# the terms of the GNU General Public License as published by the Free        #
-# Software Foundation, either version 3 of the License, or (at your option)   #
-# any later version. This code is distributed in the hope that it will be     #
-# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of      #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General    #
-# Public License for more details.                                            #
-#                                                                             #
-# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri Ferrandin  #
-# Federal University of Sao Carlos (UFSCar: https://www2.ufscar.br/) |        #
-# Campus Sao Carlos | Computer Department (DC: https://site.dc.ufscar.br/)    #
-# Program of Post Graduation in Computer Science                              #
-# (PPG-CC: http://ppgcc.dc.ufscar.br/) | Bioinformatics and Machine Learning  #
-# Group (BIOMAL: http://www.biomal.ufscar.br/)                                #                                                                                                #
-###############################################################################
-
+##############################################################################
+# Ensemble-Classifier-Chains                                                 #
+# Copyright (C) 2023                                                         #
+#                                                                            #
+# This code is free software: you can redistribute it and/or modify it under #
+# the terms of the GNU General Public License as published by the Free       #
+# Software Foundation, either version 3 of the License, or (at your option)  #
+# any later version. This code is distributed in the hope that it will be    #
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of     #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General   #
+# Public License for more details.                                           #
+#                                                                            #
+# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri           #
+# Ferrandin | Prof. Dr. Celine Vens | PhD Felipe Nakano Kenji                #
+#                                                                            #
+# Federal University of São Carlos - UFSCar - https://www2.ufscar.br         #
+# Campus São Carlos - Computer Department - DC - https://site.dc.ufscar.br   #
+# Post Graduate Program in Computer Science - PPGCC                          # 
+# http://ppgcc.dc.ufscar.br - Bioinformatics and Machine Learning Group      #
+# BIOMAL - http://www.biomal.ufscar.br                                       #
+#                                                                            #
+# Katholieke Universiteit Leuven Campus Kulak Kortrijk Belgium               #
+# Medicine Department - https://kulak.kuleuven.be/                           #
+# https://kulak.kuleuven.be/nl/over_kulak/faculteiten/geneeskunde            #
+#                                                                            #
+##############################################################################
 
 ###############################################################################
 # SET WORKSAPCE                                                               #
 ###############################################################################
 FolderRoot = "~/Ensemble-Classifier-Chains"
-FolderScripts = paste(FolderRoot, "/R", sep="")
+FolderScripts = "~/Ensemble-Classifier-Chains/R"
 
 
 ###############################################################################
@@ -52,18 +58,17 @@ if(dir.exists(FolderCF)==FALSE){dir.create(FolderCF)}
 ###############################################################################
 # QUAL Implementation USAR
 ###############################################################################
-# Implementation = c("utiml", "mulan", "python", "clus")
-Implementation = c("python")
-Implementation.2 = c("p")
+Implementation.1 = c("rf", "clus")
+Implementation.2 = c("rf", "c")
 
 
 ###############################################################################
 # CREATING CONFIG FILES FOR EACH DATASET                                      #
 ###############################################################################
 w = 1
-while(w<=length(Implementation)){
+while(w<=length(Implementation.1)){
   
-  FolderPa = paste(FolderCF, "/", Implementation[w], sep="")
+  FolderPa = paste(FolderCF, "/", Implementation.1[w], sep="")
   if(dir.exists(FolderPa)==FALSE){dir.create(FolderPa)}
   
   i = 1
@@ -75,11 +80,11 @@ while(w<=length(Implementation)){
     # print the dataset name
     cat("\n================================================")
     cat("\n\tDataset:", ds$Name)
-    cat("\n\tPackge:", Implementation[w])
+    cat("\n\tPackge:", Implementation.1[w])
     
     # Confi File Name
     # "~/Ensemble-Classifier-Chains/config-files/utiml/eg-3s-bbc1000.csv"
-    file_name = paste(FolderPa, "/ecc", Implementation.2[w], "-",
+    file_name = paste(FolderPa, "/e", Implementation.2[w], "-",
                       ds$Name, ".csv", sep="")
     
     # Starts building the configuration file
@@ -88,20 +93,33 @@ while(w<=length(Implementation)){
     # Config file table header
     write("Config, Value", file = output.file, append = TRUE)
     
-    write("Dataset_Path, /Datasets", 
+    # write("Dataset_Path, /Datasets", 
+    #      file = output.file, append = TRUE)
+    
+    # write("Dataset_Path, /home/u704616/Datasets", 
+    #      file = output.file, append = TRUE)
+    
+    write("Dataset_Path, /home/elaine/Datasets", 
           file = output.file, append = TRUE)
     
-    job_name = paste("ecc", Implementation.2[w], "-", 
-                     ds$Name, sep = "")
+    # write("Dataset_Path, /home/biomal/Datasets", 
+    #      file = output.file, append = TRUE)
     
-    folder_name = paste("/scratch/", job_name, sep = "")
+    name = paste("e", Implementation.2[w], "-", ds$Name, sep = "")
     
+    # directory name - "/scratch/eg-3s-bbc1000"
+    # temp.name = paste("/tmp/", name, sep = "")
+    temp.name = paste("/dev/shm/", name, sep = "")
     
-    str.0 = paste("Temporary_Path, ", folder_name, sep="")
+    # Absolute path to the folder where temporary processing will be done. 
+    # You should use "scratch", "tmp" or "/dev/shm", it will depend on the 
+    # cluster model where your experiment will be run.
+    str.0 = paste("Temporary_Path, ", temp.name, sep="")
     write(str.0,file = output.file, append = TRUE)
     
+    
     # "implementation, utiml"
-    str.1 = paste("Implementation, ", Implementation[w], sep="")
+    str.1 = paste("Implementation, ", Implementation.1[w], sep="")
     write(str.1, file = output.file, append = TRUE)
     
     # "dataset_name, 3s-bbc1000"

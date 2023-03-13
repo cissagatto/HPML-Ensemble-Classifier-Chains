@@ -10,8 +10,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General   #
 # Public License for more details.                                           #
 #                                                                            #
-# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri           #
-# Ferrandin | Prof. Dr. Celine Vens | Dr. Felipe Nakano Kenji                #
+# PhD Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri       #
+# Ferrandin | Prof. Dr. Celine Vens | PhD Felipe Nakano Kenji                #
 #                                                                            #
 # Federal University of São Carlos - UFSCar - https://www2.ufscar.br         #
 # Campus São Carlos - Computer Department - DC - https://site.dc.ufscar.br   #
@@ -93,10 +93,9 @@ run.ecc.python <- function(ds,
                                                       folderResults))
   
   
-  
-  cat("\n\n############################################################")
+  cat("\n\n###################################################")
   cat("\n# RUN: Execute ECC ecc                            #")
-  cat("\n############################################################\n\n")
+  cat("\n###################################################\n\n")
   time.execute = system.time(execute.ecc.python(ds, 
                                                 dataset_name, 
                                                 number_folds,
@@ -128,7 +127,7 @@ run.ecc.python <- function(ds,
   cat("\n# RUN: Save Runtime                                          #")
   cat("\n##############################################################\n\n")
   RunTimeecc = rbind(time.gather.files, time.execute, 
-                        time.evaluate, time.gather.evaluate)
+                     time.evaluate, time.gather.evaluate)
   setwd(diretorios$folderECC)
   write.csv(RunTimeecc, paste(dataset_name, "-RunTime-Python.csv", sep=""))
   

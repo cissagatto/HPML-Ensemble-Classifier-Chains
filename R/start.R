@@ -19,8 +19,8 @@ rm(list=ls())
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General   #
 # Public License for more details.                                           #
 #                                                                            #
-# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri           #
-# Ferrandin | Prof. Dr. Celine Vens | Dr. Felipe Nakano Kenji                #
+# PhD Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri       #
+# Ferrandin | Prof. Dr. Celine Vens | PhD Felipe Nakano Kenji                #
 #                                                                            #
 # Federal University of São Carlos - UFSCar - https://www2.ufscar.br         #
 # Campus São Carlos - Computer Department - DC - https://site.dc.ufscar.br   #
@@ -74,10 +74,7 @@ cat("\n# GET ARGUMENTS FROM COMMAND LINE   #")
 cat("\n#####################################\n\n")
 args <- commandArgs(TRUE)
 
-# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/clus/eg-GpositiveGO.csv"
-# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/python/g-GpositiveGO.csv"
-# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/mulan/g-GpositiveGO.csv"
-# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/python/ecc-GpositiveGO.csv"
+# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/rf/erf-GpositiveGO.csv"
 
 config_file <- args[1]
 
@@ -244,7 +241,7 @@ if(implementation=="utiml"){
   }
   
   
-} else if(implementation=="python"){
+} else if(implementation=="rf"){
   
   setwd(FolderScripts)
   source("run-python.R")
@@ -265,7 +262,7 @@ if(implementation=="utiml"){
     cat("\n#####################################################\n\n")
   result_set <- t(data.matrix(timeFinal))
   setwd(diretorios$folderECC)
-  write.csv(result_set, "Runtime-Final.csv")
+  write.csv(result_set, "Final-Runtime.csv")
   x.minutos = (1 * as.numeric(result_set[3]))/60
   setwd(diretorios$folderECC)
   write(x.minutos, "minutos.txt")
@@ -282,7 +279,7 @@ if(implementation=="utiml"){
     cat("\n# RSCRIPT COPY TO GOOGLE DRIVE                       #")
     cat("\n######################################################\n\n")
   origem = diretorios$folderECC
-  destino = paste("nuvem:ECC/Python/", dataset_name, sep="")
+  destino = paste("nuvem:ECC/RandomForests/", dataset_name, sep="")
   comando = paste("rclone -P copy ", origem, " ", destino, sep="")
   cat("\n", comando, "\n") 
   a = print(system(comando))

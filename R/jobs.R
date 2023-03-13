@@ -1,7 +1,7 @@
-rm(list = ls())
+rm(list=ls())
 
 ##############################################################################
-# TEST BEST HYBRID PARTITION                                                 #
+# Ensemble of classifier chains                                              #
 # Copyright (C) 2023                                                         #
 #                                                                            #
 # This code is free software: you can redistribute it and/or modify it under #
@@ -12,8 +12,8 @@ rm(list = ls())
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General   #
 # Public License for more details.                                           #
 #                                                                            #
-# Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri           #
-# Ferrandin | Prof. Dr. Celine Vens | Dr. Felipe Nakano Kenji                #
+# PhD Elaine Cecilia Gatto | Prof. Dr. Ricardo Cerri | Prof. Dr. Mauri       #
+# Ferrandin | Prof. Dr. Celine Vens | PhD Felipe Nakano Kenji                #
 #                                                                            #
 # Federal University of São Carlos - UFSCar - https://www2.ufscar.br         #
 # Campus São Carlos - Computer Department - DC - https://site.dc.ufscar.br   #
@@ -27,76 +27,76 @@ rm(list = ls())
 #                                                                            #
 ##############################################################################
 
-
-##################################################
-# SET WORK SPACE
-##################################################
+###############################################################################
+# SET WORKSAPCE                                                               #
+###############################################################################
 FolderRoot = "~/Ensemble-Classifier-Chains"
-FolderScripts = "~/Ensemble-Classifier-Chains"
+FolderScripts = "~/Ensemble-Classifier-Chains/R"
 
-##################################################
-# PACKAGES
-##################################################
+
+###############################################################################
+# LOAD LIBRARY/PACKAGE                                                        #
+###############################################################################
 library(stringr)
 
 
-##################################################
-# DATASETS INFORMATION
-##################################################
-setwd(FolderRoot)
+###############################################################################
+# READING DATASET INFORMATION FROM DATASETS-ORIGINAL.CSV                      #
+###############################################################################
 datasets = data.frame(read.csv("datasets-original.csv"))
 n = nrow(datasets)
 
 
-##################################################
-# WHICH IMPLEMENTATION WILL BE USED?
-##################################################
-Implementation.1 = c("python", "clus")
-Implementation.2 = c("p", "c")
+###############################################################################
+# CREATING FOLDER TO SAVE CONFIG FILES                                        #
+###############################################################################
+FolderJob = paste(FolderRoot, "/jobs", sep = "")
+if (dir.exists(FolderJob) == FALSE) {dir.create(FolderJob)}
+
+FolderCF = "/Ensemble-Classifier-Chains/config-files-1"
 
 
-######################################################
-FolderJobs = paste(FolderRoot, "/jobs", sep="")
-if(dir.exists(FolderJobs)==FALSE){dir.create(FolderJobs)}
-
-FolderCF = paste(FolderRoot, "/config-files", sep="")
-if(dir.exists(FolderCF)==FALSE){dir.create(FolderCF)}
+###############################################################################
+# QUAL PACOTE USAR
+###############################################################################
+pacote = c("rf", "clus")
 
 
-# IMPLEMENTAÇÃO
-p = 1
-while(p<=length(Implementation.1)){
+###############################################################################
+# CREATING CONFIG FILES FOR EACH DATASET                                      #
+###############################################################################
+w = 1
+while(w<=length(pacote)){
   
-  FolderImplementation = paste(FolderJobs, "/", Implementation.1[p], sep="")
-  if(dir.exists(FolderImplementation)==FALSE){dir.create(FolderImplementation)}
+  FolderPa = paste(FolderJob, "/", pacote[w], sep="")
+  if(dir.exists(FolderPa)==FALSE){dir.create(FolderPa)}
   
-  FolderI = paste(FolderCF, "/", Implementation.1[p], sep="")
+  FolderCa = paste(FolderCF, "/", pacote[w], sep="")
   
-  # DATASET
-  d = 1
-  while(d<=nrow(datasets)){
+  cat("\n================================================")
+  cat("\nPackage: \t", pacote[w])
+  
+  a = 1
+  i = 1
+  while (i <= n) {
     
-    ds = datasets[d,]
+    # select the specific dataset
+    dataset = datasets[i, ]
     
-    cat("\n\n=======================================")
-    cat("\n", Implementation.1[p])
-    cat("\n\t", ds$Name)
+    # print dataset name
+    cat("\n\t", dataset$Name)
     
-    name = paste("ecc", 
-                 Implementation.2[p], "", 
-                 ds$Name, sep="")  
+    # name 
+    name = paste("e", pacote[w], "-", dataset$Name, sep="")
     
     # directory name - "/scratch/eg-3s-bbc1000"
-    scratch.name = paste("/scratch/", name, sep = "")
+    temp.name = paste("/tmp/", name, sep = "")
     
     # Confi File Name - "eg-3s-bbc1000.csv"
-    config.file.name = paste(name, ".csv", sep="")
+    config.file.name = paste(FolderCa, "/", name, ".csv", sep="")
     
-    # sh file name - "~/Global-Partitions/jobs/utiml/eg-3s-bbc1000.sh
-    sh.name = paste(FolderImplementation, "/", name, ".sh", sep = "")
-    
-    # config file name - "~/Global-Partitions/config-files/utiml/eg-3s-bbc1000.csv"
-    config.name = paste(FolderCF, "/", config.file.name, sep = "")
+    # sh file name - "~/Ensemble-Classifier-Chains/jobs/utiml/eg-3s-bbc1000.sh
+    sh.name = paste(FolderPa, "/", name, ".sh", sep = "")
     
     # start writing
     output.file <- file(sh.name, "wb")
@@ -141,22 +141,16 @@ while(p<=length(Implementation.1)){
     write("", file = output.file, append = TRUE)
     
     # FUNCTION TO CLEAN THE JOB
-    str.2 = paste("local_job=", scratch.name, sep = "")
+    str.2 = paste("local_job=",  "\"", temp.name, "\"", sep = "")
     write(str.2, file = output.file, append = TRUE)
-    
     write("function clean_job(){", file = output.file, append = TRUE)
-    
     str.3 = paste(" echo", "\"CLEANING ENVIRONMENT...\"", sep = " ")
     write(str.3, file = output.file, append = TRUE)
-    
     str.4 = paste(" rm -rf ", "\"${local_job}\"", sep = "")
     write(str.4, file = output.file, append = TRUE)
-    
     write("}", file = output.file, append = TRUE)
-    
     write("trap clean_job EXIT HUP INT TERM ERR", 
           file = output.file, append = TRUE)
-    
     write("", file = output.file, append = TRUE)
     
     
@@ -168,80 +162,199 @@ while(p<=length(Implementation.1)){
     write("", file = output.file, append = TRUE)
     write("echo =============================================================", 
           file = output.file, append = TRUE)
-    str.5 = paste("echo SBATCH: RUNNING TBHP FOR ", ds$Name, sep="")
+    str.5 = paste("echo SBATCH: RUNNING ECC FOR ",
+                  name, sep="")
     write(str.5, file = output.file, append = TRUE)
     write("echo =============================================================", 
           file = output.file, append = TRUE)
     
     
+    # write("", file = output.file, append = TRUE)
+    # write("echo COPYING CONDA ENVIRONMENT", file = output.file, append = TRUE)
+    # str.8 = paste("cp /home/u704616/miniconda3.tar.gz ", folder_name, sep ="")
+    # write(str.8 , file = output.file, append = TRUE)
+    
+    
+    # write(" ", file = output.file, append = TRUE)
+    # write("echo UNPACKING MINICONDA", file = output.file, append = TRUE)
+    # str.9 = paste("tar xzf ", folder_name, "/miniconda3.tar.gz -C ", 
+    #               folder_name, sep = "")
+    # write(str.9 , file = output.file, append = TRUE)
+    
+    
+    # write(" ", file = output.file, append = TRUE)
+    # write("echo DELETING MINICONDA TAR.GZ", file = output.file, append = TRUE)
+    # str.10 = paste("rm -rf ", folder_name, "/miniconda3.tar.gz", sep = "")
+    # write(str.10, file = output.file, append = TRUE)
+    
+    
+    # write(" ", file = output.file, append = TRUE)
+    # write("echo SOURCE", file = output.file, append = TRUE)
+    # str.11 = paste("source ", folder_name,
+    #               "/miniconda3/etc/profile.d/conda.sh ", sep = "")
+    # write(str.11, file = output.file, append = TRUE)
+    
+    
+    # write(" ", file = output.file, append = TRUE)
+    # write("echo ACTIVATING MINICONDA ", file = output.file, append = TRUE)
+    # write("conda activate AmbienteTeste", file = output.file, append = TRUE)
+    # write(" ", file = output.file, append = TRUE)
+    
+    
+    # write("echo RUNNING", file = output.file, append = TRUE)
+    # str.12 = paste("Rscript /home/u704616/Global-ECC/R/global.R ", 
+    #              config_name, sep = "")
+    # write(str.12, file = output.file, append = TRUE)
+    # write(" ", file = output.file, append = TRUE)
+    
+    
     write("", file = output.file, append = TRUE)
     write("echo DELETING FOLDER", file = output.file, append = TRUE)
-    str.6 = paste("rm -rf ", scratch.name, sep = "")
+    str.6 = paste("rm -rf ", temp.name, sep = "")
     write(str.6, file = output.file, append = TRUE)
     
     
     write("", file = output.file, append = TRUE)
     write("echo CREATING FOLDER", file = output.file, append = TRUE)
-    str.7 = paste("mkdir ", scratch.name, sep = "")
+    str.7 = paste("mkdir ", temp.name, sep = "")
     write(str.7, file = output.file, append = TRUE)
     
     
     write("", file = output.file, append = TRUE)
+    write("echo LISTING tmp", file = output.file, append = TRUE)
+    write("cd /tmp", file = output.file, append = TRUE)
+    write("ls ", file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo entrando na pasta", file = output.file, append = TRUE)
+    str = paste("cd ", name, sep="")
+    write(str, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo LISTING tmp/NAME", file = output.file, append = TRUE)
+    write("ls ", file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
     write("echo COPYING SINGULARITY", file = output.file, append = TRUE)
-    str.30 = paste("cp /home/u704616/Experimentos.sif ", scratch.name, sep ="")
+    str.30 = paste("cp /home/u704616/Experimentos-0.sif ", temp.name, sep ="")
     write(str.30 , file = output.file, append = TRUE)
     
     
     write("", file = output.file, append = TRUE)
-    write("echo listing", file = output.file, append = TRUE)
-    str.8 = paste("ls /", scratch.name, sep ="")
-    write(str.8, file = output.file, append = TRUE)
+    write("echo CRIANDO TESTED", file = output.file, append = TRUE)
+    str.29 = paste("mkdir ", temp.name, "/Ensemble-Classifier-Chains", sep="")
+    write(str.29, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO DATASET", file = output.file, append = TRUE)
+    str.28 = paste("mkdir ", temp.name, "/Datasets", sep="")
+    write(str.28, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO Dataset", file = output.file, append = TRUE)
+    str.26 = paste("mkdir ", temp.name, "/Datasets/", 
+                   dataset$Name, sep="")
+    write(str.26, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO labelSpace", file = output.file, append = TRUE)
+    str.25 = paste("mkdir ", temp.name, "/Datasets/", 
+                   dataset$Name, "/LabelSpace", sep="")
+    write(str.25, file = output.file, append = TRUE)
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO properties", file = output.file, append = TRUE)
+    str.40 = paste("mkdir ", temp.name, "/Datasets/", 
+                   dataset$Name, "/Properties", sep="")
+    write(str.40, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO nameslabels", file = output.file, append = TRUE)
+    str.24 = paste("mkdir ", temp.name, "/Datasets/", 
+                   dataset$Name, "/NamesLabels", sep="")
+    write(str.24, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO CV", file = output.file, append = TRUE)
+    str.23 = paste("mkdir ", temp.name, "/Datasets/", 
+                   dataset$Name, "/CrosValidation", sep="")
+    write(str.23, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO CVTR", file = output.file, append = TRUE)
+    str.21 = paste("mkdir ",temp.name, "/Datasets/", 
+                   dataset$Name, "/CrosValidation/Tr", sep="")
+    write(str.21, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO CVTS", file = output.file, append = TRUE)
+    str.20 = paste("mkdir ",temp.name, "/Datasets/", 
+                   dataset$Name, "/CrosValidation/Ts", sep="")
+    write(str.20, file = output.file, append = TRUE)
+    
+    
+    write("", file = output.file, append = TRUE)
+    write("echo CRIANDO CVVL", file = output.file, append = TRUE)
+    str.19 = paste("mkdir ",temp.name, "/Datasets/", 
+                   dataset$Name, "/CrosValidation/Vl", sep="")
+    write(str.19, file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
-    write("echo SETANDO RCLONE", file = output.file, append = TRUE)
-    write("singularity instance start --bind ~/.config/rclone/:/root/.config/rclone Experimentos.sif EXP", 
-          file = output.file, append = TRUE)
+    write("echo INICIALIZANDO O SINGULARITY", file = output.file, append = TRUE)
+    str = paste("singularity instance start --bind ~/.config/rclone/:/root/.config/rclone ", 
+                temp.name, "/Experimentos-0.sif EXPE", a, sep="")
+    write(str, file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
     write("echo EXECUTANDO", file = output.file, append = TRUE)
-    str = paste("singularity run --app Rscript instance://EXP /Ensemble-Classifier-Chains/R/start.R \"/Ensemble-Classifier-Chains/config-files/",
+    str = paste("singularity run --app Rscript instance://EXPE", a,
+                " /Ensemble-Classifier-Chains/R/start.R \"",
                 config.file.name, "\"", sep="")
     write(str, file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
     write("echo STOP INSTANCIA", file = output.file, append = TRUE)
-    write("singularity instance stop EXP", 
-          file = output.file, append = TRUE)
+    str = paste("singularity instance stop EXPE", a, sep="")
+    write(str,file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
     write("echo DELETING JOB FOLDER", file = output.file, append = TRUE)
-    str.13 = paste("rm -rf ", scratch.name, sep = "")
+    str.13 = paste("rm -rf ", temp.name, sep = "")
     write(str.13, file = output.file, append = TRUE)
     
     
     write("", file = output.file, append = TRUE)
     write("echo ==================================", 
           file = output.file, append = TRUE)
-    write("echo SBATCH: ENDED SUCCESSFULLY", 
-          file = output.file, append = TRUE)
+    write("echo SBATCH: ENDED SUCCESSFULLY", file = output.file, append = TRUE)
     write("echo ==================================", 
           file = output.file, append = TRUE)
     
     close(output.file)
     
-    d = d + 1
+    a = a + 1
+    i = i + 1
     gc()
-  } # FIM DO DATASET
-  
-  
-  
-  p = p + 1
+  }
+  w = w + 1
   gc()
-} # FIM DA IMPLEMENTAÇÃO
+}
+
+cat("\n================================================")
 
 
 ###############################################################################

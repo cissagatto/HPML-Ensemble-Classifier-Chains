@@ -375,7 +375,7 @@ evaluate.ecc.python <- function(ds,
                           wrong.perc, correct.perc)
     
     setwd(FolderSplit)
-    write.csv(conf.mat, "matrix-confusion.csv")
+    write.csv(conf.mat, "utiml-matrix-confusion.csv")
     
     
     #f = f + 1

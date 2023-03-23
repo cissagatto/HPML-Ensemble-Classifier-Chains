@@ -53,13 +53,13 @@ n = nrow(datasets)
 FolderJob = paste(FolderRoot, "/jobs", sep = "")
 if (dir.exists(FolderJob) == FALSE) {dir.create(FolderJob)}
 
-FolderCF = "/Ensemble-Classifier-Chains/config-files-1"
+FolderCF = "/Ensemble-Classifier-Chains/config-files-ufscar"
 
 
 ###############################################################################
 # QUAL PACOTE USAR
 ###############################################################################
-pacote = c("rf", "clus")
+pacote = c("rf")
 
 
 ###############################################################################
@@ -87,7 +87,7 @@ while(w<=length(pacote)){
     cat("\n\t", dataset$Name)
     
     # name 
-    name = paste("e", pacote[w], "-", dataset$Name, sep="")
+    name = paste("ecc-", dataset$Name, sep="")
     
     # directory name - "/scratch/eg-3s-bbc1000"
     temp.name = paste("/tmp/", name, sep = "")
@@ -239,7 +239,7 @@ while(w<=length(pacote)){
     
     write("", file = output.file, append = TRUE)
     write("echo COPYING SINGULARITY", file = output.file, append = TRUE)
-    str.30 = paste("cp /home/u704616/Experimentos-0.sif ", temp.name, sep ="")
+    str.30 = paste("cp /home/u704616/Experimentos-3.sif ", temp.name, sep ="")
     write(str.30 , file = output.file, append = TRUE)
     
     
@@ -313,13 +313,13 @@ while(w<=length(pacote)){
     write(" ", file = output.file, append = TRUE)
     write("echo INICIALIZANDO O SINGULARITY", file = output.file, append = TRUE)
     str = paste("singularity instance start --bind ~/.config/rclone/:/root/.config/rclone ", 
-                temp.name, "/Experimentos-0.sif EXPE", a, sep="")
+                temp.name, "/Experimentos-3.sif EXPEcc", a, sep="")
     write(str, file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
     write("echo EXECUTANDO", file = output.file, append = TRUE)
-    str = paste("singularity run --app Rscript instance://EXPE", a,
+    str = paste("singularity run --app Rscript instance://EXPEcc", a,
                 " /Ensemble-Classifier-Chains/R/start.R \"",
                 config.file.name, "\"", sep="")
     write(str, file = output.file, append = TRUE)
@@ -327,7 +327,7 @@ while(w<=length(pacote)){
     
     write(" ", file = output.file, append = TRUE)
     write("echo STOP INSTANCIA", file = output.file, append = TRUE)
-    str = paste("singularity instance stop EXPE", a, sep="")
+    str = paste("singularity instance stop EXPEcc", a, sep="")
     write(str,file = output.file, append = TRUE)
     
     

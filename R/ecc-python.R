@@ -216,14 +216,14 @@ execute.ecc.python <- function(ds,
     y_probas = data.frame(read.csv("y_proba.csv"))
     y_trues = data.frame(read.csv("y_true.csv"))
     
+    
     #####################################################################
     nomes.rotulos = colnames(y_trues)
     
     #####################################################################
     cat("\n\tUTIML Threshold\n")
-    utiml.threshold <- scut_threshold(y_probas, mldr.teste)
     y_preds <- data.frame(as.matrix(fixed_threshold(y_probas, 
-                                                    utiml.threshold)))
+                                                   threshold = 0.5)))
     
     setwd(FolderSplit)
     write.csv(y_preds, "y_predict.csv", row.names = FALSE)

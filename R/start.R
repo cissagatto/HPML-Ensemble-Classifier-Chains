@@ -74,7 +74,7 @@ cat("\n# GET ARGUMENTS FROM COMMAND LINE   #")
 cat("\n#####################################\n\n")
 args <- commandArgs(TRUE)
 
-# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files/rf/erf-GpositiveGO.csv"
+# config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files-laptop/rf/ecc-GpositiveGO.csv"
 
 config_file <- args[1]
 

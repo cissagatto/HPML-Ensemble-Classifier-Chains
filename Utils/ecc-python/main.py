@@ -85,7 +85,7 @@ if __name__ == '__main__':
     model.fit(X_train, Y_train)
 
     # predições probabilísticas
-    y_pred_d = pd.DataFrame(model.predict(X_test)) 
+    y_pred_d = pd.DataFrame(model.predict_proba(X_test)) 
     
     # renomeando as colunas
     y_pred_d.columns = labels_y_test

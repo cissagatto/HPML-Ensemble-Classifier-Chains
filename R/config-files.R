@@ -51,15 +51,15 @@ n = nrow(datasets)
 ###############################################################################
 # CREATING FOLDER TO SAVE CONFIG FILES                                        #
 ###############################################################################
-FolderCF = paste(FolderRoot, "/config-files-2", sep="")
+FolderCF = paste(FolderRoot, "/config-files-laptop", sep="")
 if(dir.exists(FolderCF)==FALSE){dir.create(FolderCF)}
 
 
 ###############################################################################
 # QUAL Implementation USAR
 ###############################################################################
-Implementation.1 = c("rf", "clus")
-Implementation.2 = c("rf", "c")
+Implementation.1 = c("rf")
+Implementation.2 = c("rf")
 
 
 ###############################################################################
@@ -82,10 +82,12 @@ while(w<=length(Implementation.1)){
     cat("\n\tDataset:", ds$Name)
     cat("\n\tPackge:", Implementation.1[w])
     
-    # Confi File Name
-    # "~/Ensemble-Classifier-Chains/config-files/utiml/eg-3s-bbc1000.csv"
-    file_name = paste(FolderPa, "/e", Implementation.2[w], "-",
-                      ds$Name, ".csv", sep="")
+    
+    name = paste("ecc-", ds$Name, sep = "")
+    
+    
+    # name 
+    file_name = paste(FolderPa, "/", name, ".csv", sep="")
     
     # Starts building the configuration file
     output.file <- file(file_name, "wb")
@@ -99,13 +101,11 @@ while(w<=length(Implementation.1)){
     # write("Dataset_Path, /home/u704616/Datasets", 
     #      file = output.file, append = TRUE)
     
-     write("Dataset_Path, /home/elaine/Datasets", 
+    # write("Dataset_Path, /home/elaine/Datasets", 
+    #        file = output.file, append = TRUE)
+    
+     write("Dataset_Path, /home/biomal/Datasets", 
           file = output.file, append = TRUE)
-    
-    # write("Dataset_Path, /home/biomal/Datasets", 
-    #      file = output.file, append = TRUE)
-    
-    name = paste("e", Implementation.2[w], "-", ds$Name, sep = "")
     
     # directory name - "/scratch/eg-3s-bbc1000"
     # temp.name = paste("/tmp/", name, sep = "")

@@ -465,15 +465,15 @@ gather.eval.ecc.python <- function(ds,
     final.proba.ma.mi.auc = rbind(final.proba.ma.mi.auc, proba.ma.mi.auc)
     
     ##################
-    pred.auc = data.frame(read.csv("pred-auc.csv"))
+    pred.auc = data.frame(read.csv("bin-auc.csv"))
     names(pred.auc) = c("fold", "value")
     final.pred.auc = rbind(final.pred.auc, pred.auc)
     
-    pred.micro.auc = data.frame(read.csv("pred-micro-auc.csv"))
+    pred.micro.auc = data.frame(read.csv("bin-micro-auc.csv"))
     names(pred.micro.auc) = c("fold", "value")
     final.pred.micro.auc = rbind(final.pred.micro.auc, pred.micro.auc)
     
-    pred.macro.auc = data.frame(read.csv("pred-macro-auc.csv"))
+    pred.macro.auc = data.frame(read.csv("bin-macro-auc.csv"))
     names(pred.macro.auc) = c("fold", "value")
     final.pred.macro.auc = rbind(final.pred.macro.auc, pred.macro.auc)
     
@@ -519,9 +519,9 @@ gather.eval.ecc.python <- function(ds,
   final.pred.macro.auc = data.frame(fold, macro.auc = final.pred.macro.auc$value)
   
   setwd(diretorios$folderECC)
-  write.csv(final.pred.auc, "pred-auc.csv", row.names = FALSE)  
-  write.csv(final.pred.macro.auc, "pred-macro-auc.csv", row.names = FALSE)  
-  write.csv(final.pred.micro.auc, "pred-micro-auc.csv", row.names = FALSE)
+  write.csv(final.pred.auc, "bin-auc.csv", row.names = FALSE)  
+  write.csv(final.pred.macro.auc, "bin-macro-auc.csv", row.names = FALSE)  
+  write.csv(final.pred.micro.auc, "bin-micro-auc.csv", row.names = FALSE)
   
   # calculando a média dos 10 folds para cada medida
   media = data.frame(apply(confMatFinal[,-1], 1, mean))

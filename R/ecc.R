@@ -61,12 +61,17 @@ options(show.error.messages = TRUE)   # ERROR MESSAGES
 options(scipen=20)                    # number of places after the comma
 
 
+########################################
+parameters = list()
+########################################
+
 
 cat("\n########################################")
 cat("\n# Reading Datasets-Original.csv        #")
 cat("\n########################################\n\n")
 setwd(FolderRoot)
 datasets <- data.frame(read.csv("datasets-original.csv"))
+parameters$Datasets.List = datasets
 
 
 cat("\n#####################################")
@@ -74,7 +79,9 @@ cat("\n# GET ARGUMENTS FROM COMMAND LINE   #")
 cat("\n#####################################\n\n")
 args <- commandArgs(TRUE)
 
+
 # config_file = "/home/biomal/Ensemble-Classifier-Chains/config-files-laptop/rf/ecc-GpositiveGO.csv"
+
 
 config_file <- args[1]
 
@@ -98,29 +105,42 @@ config = data.frame(read.csv(config_file))
 print(config)
 cat("\n########################################\n\n")
 
+
+cat("\n########################################")
+cat("\n# Getting Parameters                   #\n")
+cat("\n########################################")
 dataset_path = toString(config$Value[1])
 dataset_path = str_remove(dataset_path, pattern = " ")
+parameters$Config.File$Dataset.Path = dataset_path
 
 folderResults = toString(config$Value[2]) 
 folderResults = str_remove(folderResults, pattern = " ")
+parameters$Config.File$Folder.Results = folderResults
 
 implementation = toString(config$Value[3])
 implementation = str_remove(implementation, pattern = " ")
+parameters$Config.File$Implementation = implementation
 
 dataset_name = toString(config$Value[4])
 dataset_name = str_remove(dataset_name, pattern = " ")
+parameters$Config.File$Dataset.Name = dataset_name
 
 number_dataset = as.numeric(config$Value[5])
+parameters$Config.File$Number.Dataset = number_dataset
+
 number_folds = as.numeric(config$Value[6])
+parameters$Config.File$Number.Folds = number_folds
+
 number_cores = as.numeric(config$Value[7])
+parameters$Config.File$Number.Cores = number_cores
 
 ds = datasets[number_dataset,]
+parameters$Dataset.Info = ds
 
 
 cat("\n################################################################\n")
 print(ds)
 cat("\n################################################################\n\n")
-
 
 
 cat("\n########################################")
@@ -132,9 +152,8 @@ if (dir.exists(folderResults) == FALSE) {dir.create(folderResults)}
 cat("\n###############################\n")
 cat("\n# Get directories             #")
 cat("\n###############################\n\n")
-diretorios <- directories(dataset_name, folderResults)
-# print(diretorios)
-# cat("\n\n")
+diretorios <- directories(parameters)
+parameters$Directories = diretorios
 
 
 
@@ -193,53 +212,53 @@ if(file.exists(str00)==FALSE){
 ##############################################################################
 
 if(implementation=="utiml"){
-  
-  setwd(FolderScripts)
-  source("run-utiml.R")
-  
-  cat("\n\n############################################################")
-    cat("\n# RSCRIPT ECC START                                     #")
-    cat("\n############################################################\n\n")
-  timeFinal <- system.time(results <- run.ecc.utiml(ds, 
-                                                    dataset_name,
-                                                    number_dataset, 
-                                                    number_cores, 
-                                                    number_folds, 
-                                                    folderResults))  
-  
-  cat("\n\n#####################################################")
-    cat("\n# RSCRIPT SAVE RUNTIME                              #")
-    cat("\n#####################################################\n\n")
-  result_set <- t(data.matrix(timeFinal))
-  setwd(diretorios$folderECC)
-  write.csv(result_set, "Runtime-Final.csv")
-  x.minutos =(1 * as.numeric(result_set[3]))/60
-  setwd(diretorios$folderECC)
-  write(x.minutos, "minutos.txt")
-  
-  
-  cat("\n\n#####################################################")
-    cat("\n# RSCRIPT DELETE                                   #")
-    cat("\n####################################################\n\n")
-  str5 = paste("rm -r ", diretorios$folderDataset, sep="")
-  print(system(str5))
-  
-  
-  
-  cat("\n\n######################################################")
-    cat("\n# RSCRIPT COPY TO GOOGLE DRIVE                       #")
-    cat("\n######################################################\n\n")
-  origem = diretorios$folderECC
-  destino = paste("nuvem:ECC/Utiml/", dataset_name, sep="")
-  comando = paste("rclone -P copy ", origem, " ", destino, sep="")
-  cat("\n", comando, "\n") 
-  a = print(system(comando))
-  a = as.numeric(a)
-  if(a != 0) {
-    stop("Erro RCLONE")
-    quit("yes")
-  }
-  
+  # 
+  # setwd(FolderScripts)
+  # source("run-utiml.R")
+  # 
+  # cat("\n\n############################################################")
+  #   cat("\n# RSCRIPT ECC START                                     #")
+  #   cat("\n############################################################\n\n")
+  # timeFinal <- system.time(results <- run.ecc.utiml(ds, 
+  #                                                   dataset_name,
+  #                                                   number_dataset, 
+  #                                                   number_cores, 
+  #                                                   number_folds, 
+  #                                                   folderResults))  
+  # 
+  # cat("\n\n#####################################################")
+  #   cat("\n# RSCRIPT SAVE RUNTIME                              #")
+  #   cat("\n#####################################################\n\n")
+  # result_set <- t(data.matrix(timeFinal))
+  # setwd(diretorios$folderECC)
+  # write.csv(result_set, "Runtime-Final.csv")
+  # x.minutos =(1 * as.numeric(result_set[3]))/60
+  # setwd(diretorios$folderECC)
+  # write(x.minutos, "minutos.txt")
+  # 
+  # 
+  # cat("\n\n#####################################################")
+  #   cat("\n# RSCRIPT DELETE                                   #")
+  #   cat("\n####################################################\n\n")
+  # str5 = paste("rm -r ", diretorios$folderDataset, sep="")
+  # print(system(str5))
+  # 
+  # 
+  # 
+  # cat("\n\n######################################################")
+  #   cat("\n# RSCRIPT COPY TO GOOGLE DRIVE                       #")
+  #   cat("\n######################################################\n\n")
+  # origem = diretorios$folderECC
+  # destino = paste("nuvem:ECC/Utiml/", dataset_name, sep="")
+  # comando = paste("rclone -P copy ", origem, " ", destino, sep="")
+  # cat("\n", comando, "\n") 
+  # a = print(system(comando))
+  # a = as.numeric(a)
+  # if(a != 0) {
+  #   stop("Erro RCLONE")
+  #   quit("yes")
+  # }
+  # 
   
 } else if(implementation=="rf"){
   
@@ -249,12 +268,7 @@ if(implementation=="utiml"){
   cat("\n\n############################################################")
     cat("\n# RSCRIPT ECC START                                     #")
     cat("\n############################################################\n\n")
-  timeFinal <- system.time(results <- run.ecc.python(ds, 
-                                                     dataset_name,
-                                                     number_dataset, 
-                                                     number_cores, 
-                                                     number_folds, 
-                                                     folderResults))  
+  timeFinal <- system.time(results <- run.ecc.python(parameters))  
   
   
   cat("\n\n#####################################################")
@@ -263,9 +277,6 @@ if(implementation=="utiml"){
   result_set <- t(data.matrix(timeFinal))
   setwd(diretorios$folderECC)
   write.csv(result_set, "Final-Runtime.csv")
-  x.minutos = (1 * as.numeric(result_set[3]))/60
-  setwd(diretorios$folderECC)
-  write(x.minutos, "minutos.txt")
   
   
   cat("\n\n###################################################")

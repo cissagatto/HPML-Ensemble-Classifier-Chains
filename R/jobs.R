@@ -43,6 +43,7 @@ library(stringr)
 ###############################################################################
 # READING DATASET INFORMATION FROM DATASETS-ORIGINAL.CSV                      #
 ###############################################################################
+setwd(FolderRoot)
 datasets = data.frame(read.csv("datasets-original.csv"))
 n = nrow(datasets)
 
@@ -53,7 +54,7 @@ n = nrow(datasets)
 FolderJob = paste(FolderRoot, "/jobs", sep = "")
 if (dir.exists(FolderJob) == FALSE) {dir.create(FolderJob)}
 
-FolderCF = "/Ensemble-Classifier-Chains/config-files-ufscar"
+FolderCF = "/Ensemble-Classifier-Chains/config-files-apptainer"
 
 
 ###############################################################################
@@ -125,11 +126,11 @@ while(w<=length(pacote)){
     write("#SBATCH -t 128:00:00", file = output.file, append = TRUE)
     
     # uncomment this line if you need to use all node memory
-    # write("#SBATCH --mem=0", file = output.file, append = TRUE)
+    write("#SBATCH --mem=0", file = output.file, append = TRUE)
     
     # amount of node memory you want to use
     # comment this line if you are using -mem=0
-    write("#SBATCH --mem-per-cpu=30GB", file = output.file, append = TRUE)
+    # write("#SBATCH --mem-per-cpu=30GB", file = output.file, append = TRUE)
     # write("#SBATCH -mem=0", file = output.file, append = TRUE)
     
     # email to receive notification
@@ -239,7 +240,7 @@ while(w<=length(pacote)){
     
     write("", file = output.file, append = TRUE)
     write("echo COPYING SINGULARITY", file = output.file, append = TRUE)
-    str.30 = paste("cp /home/u704616/Experimentos-3.sif ", temp.name, sep ="")
+    str.30 = paste("cp /home/u704616/Experimentos-6.sif ", temp.name, sep ="")
     write(str.30 , file = output.file, append = TRUE)
     
     
@@ -313,14 +314,14 @@ while(w<=length(pacote)){
     write(" ", file = output.file, append = TRUE)
     write("echo INICIALIZANDO O SINGULARITY", file = output.file, append = TRUE)
     str = paste("singularity instance start --bind ~/.config/rclone/:/root/.config/rclone ", 
-                temp.name, "/Experimentos-3.sif EXPEcc", a, sep="")
+                temp.name, "/Experimentos-6.sif EXPEcc", a, sep="")
     write(str, file = output.file, append = TRUE)
     
     
     write(" ", file = output.file, append = TRUE)
     write("echo EXECUTANDO", file = output.file, append = TRUE)
     str = paste("singularity run --app Rscript instance://EXPEcc", a,
-                " /Ensemble-Classifier-Chains/R/start.R \"",
+                " /Ensemble-Classifier-Chains/R/ecc.R \"",
                 config.file.name, "\"", sep="")
     write(str, file = output.file, append = TRUE)
     

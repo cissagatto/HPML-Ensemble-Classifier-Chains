@@ -33,93 +33,6 @@ FolderRoot = "~/Ensemble-Classifier-Chains"
 FolderScripts = "~/Ensemble-Classifier-Chains/R"
 
 
-###############################################################################
-# FUNCTION GATHER FILES FOLDS ECC                                          #
-#   Objective                                                                 #
-#       Joins the configuration, training and test files in a single folder   #
-#     running the PYTHON                                                        #
-#   Parameters                                                                #
-#       ds: specific dataset information                                      #
-#       dataset_name: dataset name. It is used to save files                  #
-#       number_folds: number of folds created                                 #
-#       FolderConfifFiles: folder path                                        #
-#   Return                                                                    #
-#       configurations files                                                  #
-###############################################################################
-gather.files.python <- function(ds, 
-                                dataset_name,
-                                number_dataset, 
-                                number_cores, 
-                                number_folds, 
-                                folderResults){
-  
-  f = 1
-  foldsParalel <- foreach(f = 1:number_folds) %dopar% {
-  # while(f<=number_folds){
-    
-    cat("\nFold: ", f)
-    
-    ###########################################################################
-    FolderRoot = "~/Ensemble-Classifier-Chains"
-    FolderScripts = "~/Ensemble-Classifier-Chains/R"
-    
-    ###########################################################################
-    setwd(FolderScripts)
-    source("libraries.R")
-    
-    setwd(FolderScripts)
-    source("utils.R")
-    
-    ###########################################################################
-    diretorios = directories(dataset_name, folderResults)
-    
-    ###########################################################################
-    FolderSplit = paste(diretorios$folderECC, "/Split-", f, sep="")
-    if(dir.exists(FolderSplit)==FALSE){dir.create(FolderSplit)}
-    
-    # names files
-    nome.tr.csv = paste(dataset_name, "-Split-Tr-", f, ".csv", sep="")
-    nome.ts.csv = paste(dataset_name, "-Split-Ts-", f, ".csv", sep="")
-    nome.vl.csv = paste(dataset_name, "-Split-Vl-", f, ".csv", sep="")
-    
-    # train
-    setwd(diretorios$folderCVTR)
-    if(file.exists(nome.tr.csv) == TRUE){
-      setwd(diretorios$folderCVTR)
-      copia = paste(diretorios$folderCVTR, "/", nome.tr.csv, sep="")
-      cola = paste(FolderSplit, "/", nome.tr.csv, sep="")
-      file.copy(copia, cola, overwrite = TRUE)
-    }
-    
-    # test
-    setwd(diretorios$folderCVTS)
-    if(file.exists(nome.ts.csv) == TRUE){
-      setwd(diretorios$folderCVTS)
-      copia = paste(diretorios$folderCVTS, "/", nome.ts.csv, sep="")
-      cola = paste(FolderSplit, "/", nome.ts.csv, sep="")
-      file.copy(copia, cola, overwrite = TRUE)
-    }
-    
-    # validation
-    setwd(diretorios$folderCVVL)
-    if(file.exists(nome.vl.csv) == TRUE){
-      setwd(diretorios$folderCVVL)
-      copia = paste(diretorios$folderCVVL, "/", nome.vl.csv, sep="")
-      cola = paste(FolderSplit, "/", nome.vl.csv, sep="")
-      file.copy(copia, cola, overwrite = TRUE)
-    }
-    
-    # f = f + 1
-    gc()
-  }
-  
-  gc()
-  cat("\n#################################################################")
-  cat("\n# ECC PYTHON: END OF THE GATHER FILES FOLDS FUNCTION           #")
-  cat("\n#################################################################")
-  cat("\n\n")
-}
-
 
 ##############################################################################
 # FUNCTION EXECUTE PYTHON ECC                                               #
@@ -127,20 +40,16 @@ gather.files.python <- function(ds,
 #       Tests ECC partitions                                              #
 #   Parameters                                                               #
 #       ds: specific dataset information                                     #
-#       dataset_name: dataset name. It is used to save files.                #
+#       parameters$Config.File$Dataset.Name: dataset name. It is used to save files.                #
 #       number_folds: number of folds created                                #
 #       Folder: folder path                                                  #
 #   Return                                                                   #
 #       configurations files                                                 #
 ##############################################################################
-execute.ecc.python <- function(ds, 
-                                 dataset_name, 
-                                 number_folds, 
-                                 number_cores, 
-                                 folderResults){
+execute.ecc.python <- function(parameters){
   
   f = 1
-  PYTHONECCParalel <- foreach(f = 1:number_folds) %dopar%{
+  PythonEccParalel <- foreach(f = 1:parameters$Config.File$Number.Folds) %dopar%{
   # while(f<=number_folds){
     
     #########################################################################
@@ -158,21 +67,20 @@ execute.ecc.python <- function(ds,
     source("utils.R")
     
     ##########################################################################
-    diretorios = directories(dataset_name, folderResults)
+    FolderSplit = paste(parameters$Directories$folderECC , "/Split-", f, sep="")
     
     
     ##########################################################################
-    FolderSplit = paste(diretorios$folderECC, "/Split-", f, sep="")
-    
-    
-    ##########################################################################
-    train.file.name = paste(FolderSplit, "/", dataset_name, 
+    train.file.name = paste(parameters$Directories$folderCVTR, "/", 
+                            parameters$Config.File$Dataset.Name, 
                             "-Split-Tr-", f , ".csv", sep="")
     
-    test.file.name = paste(FolderSplit, "/", dataset_name, 
+    test.file.name = paste(parameters$Directories$folderCVTS, "/",
+                           parameters$Config.File$Dataset.Name, 
                            "-Split-Ts-", f, ".csv", sep="")
     
-    val.file.name = paste(FolderSplit, "/", dataset_name, 
+    val.file.name = paste(parameters$Directories$folderCVVL, "/", 
+                          parameters$Config.File$Dataset.Name, 
                             "-Split-Vl-", f , ".csv", sep="")
     
     
@@ -183,377 +91,430 @@ execute.ecc.python <- function(ds,
     val = data.frame(read.csv(val.file.name))
     tv = rbind(train, val)
     
-    ##########################################################################
-    labels.indices = seq(ds$LabelStart, ds$LabelEnd, by=1)
     
     ##########################################################################
+    labels.indices = seq(parameters$Dataset.Info$LabelStart, 
+                         parameters$Dataset.Info$LabelEnd, by=1)
+    
+    ##########################################################################
+    mldr.treino = mldr_from_dataframe(train, labelIndices = labels.indices)
     mldr.teste = mldr_from_dataframe(test, labelIndices = labels.indices)
+    mldr.val = mldr_from_dataframe(val, labelIndices = labels.indices)
+    mldr.tv = mldr_from_dataframe(tv, labelIndices = labels.indices)
     
     ##################################################################
     # EXECUTE ECC PYTHON
-    str.execute = paste("python3 ", diretorios$folderUtils,
+    str.execute = paste("python3 ", parameters$Directories$folderUtils,
                         "/ecc-python/main.py ", 
                         train.file.name, " ",
                         val.file.name,  " ",
                         test.file.name, " ", 
-                        start = as.numeric(ds$AttEnd), " ", 
+                        start = as.numeric(parameters$Dataset.Info$AttEnd), " ", 
                         FolderSplit,
                         sep="")
     
     # cat("\n", str.execute, "\n")
     
-    cat("\nEXECUTANDO")
+    # EXECUTA
+    start <- proc.time()
     res = print(system(str.execute))
+    tempo = data.matrix((proc.time() - start))
+    tempo = data.frame(t(tempo))
+    write.csv(tempo, paste(FolderSplit, "/runtime-fold.csv", sep=""))
     
     if(res!=0){
       break
     }
     
+    ###################
+    y_pred_proba = data.frame(read.csv(paste(FolderSplit, "/y_pred_proba.csv", sep="")))
+    y_true = data.frame(read.csv(paste(FolderSplit, "/y_true.csv", sep="")))
     
-    ############################################################3
-    cat("\nAbrindo Predições")
-    setwd(FolderSplit)
-    y_probas = data.frame(read.csv("y_proba.csv"))
-    y_trues = data.frame(read.csv("y_true.csv"))
+    ####################################################################################
+    y.true.2 = data.frame(sapply(y_true, function(x) as.numeric(as.character(x))))
+    y.true.3 = mldr_from_dataframe(y.true.2, 
+                                   labelIndices = seq(1,ncol(y.true.2)), 
+                                   name = "y.true.2")
+    y_pred_proba = sapply(y_pred_proba, function(x) as.numeric(as.character(x)))
     
+    ########################################################################
+    y_threshold_05 <- data.frame(as.matrix(fixed_threshold(y_pred_proba,
+                                                           threshold = 0.5)))
+    write.csv(y_threshold_05, 
+              paste(FolderSplit, "/y_pred_thr05.csv", sep=""),
+              row.names = FALSE)
+    
+    ########################################################################
+    y_threshold_card = lcard_threshold(as.matrix(y_pred_proba), 
+                                       mldr.tv$measures$cardinality,
+                                       probability = F)
+    write.csv(y_threshold_card, 
+              paste(FolderSplit, "/y_pred_thrLC.csv", sep=""),
+              row.names = FALSE)
+    
+    y_threshold_card = data.frame(as.matrix(y_threshold_card))
     
     #####################################################################
-    nomes.rotulos = colnames(y_trues)
+    nome.true = paste(FolderSplit, "/y_true.csv", sep="")
+    nome.pred.proba = paste(FolderSplit, "/y_pred_proba.csv", sep="")
+    nome.thr.05 = paste(FolderSplit, "/y_pred_thr05.csv", sep="")
+    nome.thr.LC = paste(FolderSplit, "/y_pred_thrLC.csv", sep="")
     
-    #####################################################################
-    cat("\n\tUTIML Threshold\n")
-    y_preds <- data.frame(as.matrix(fixed_threshold(y_probas, 
-                                                   threshold = 0.5)))
+    save.pred.proba = paste(FolderSplit, "/pred-proba-auprc.csv", sep="")
+    save.thr05 = paste(FolderSplit, "/thr-05-auprc.csv", sep="")
+    save.thrLC = paste(FolderSplit, "/thr-lc-auprc.csv", sep="")
     
-    setwd(FolderSplit)
-    write.csv(y_preds, "y_predict.csv", row.names = FALSE)
+    #################################################################
+    str.execute = paste("python3 ", parameters$Directories$folderUtils,
+                        "/ecc-python/auprc.py ",
+                        nome.true, " ",
+                        nome.pred.proba, " ",
+                        save.pred.proba, " ",
+                        sep="")
+    res = print(system(str.execute))
+    if(res!=0){
+      break
+    }
     
-    #####################################################################
-    cat("\nPlot ROC curve")
-    roc.curva(predictions = y_preds,
-              probabilities = y_probas,
-              test = mldr.teste,
-              Folder = FolderSplit)
+    #################################################################
+    str.execute = paste("python3 ",  parameters$Directories$folderUtils,
+                        "/ecc-python/auprc.py ",
+                        nome.true, " ",
+                        nome.thr.05, " ",
+                        save.thr05, " ",
+                        sep="")
+    res = print(system(str.execute))
+    if(res!=0){
+      break
+    }
+    
+    #################################################################
+    str.execute = paste("python3 ",  parameters$Directories$folderUtils,
+                        "/ecc-python/auprc.py ",
+                        nome.true, " ",
+                        nome.thr.LC, " ",
+                        save.thrLC, " ",
+                        sep="")
+    res = print(system(str.execute))
+    if(res!=0){
+      break
+    }
+    
+    ####################################################
+    names = paste(parameters$Names.Labels$Labels, "-proba", sep="")
+    y_pred_proba = data.frame(y_pred_proba)
+    names(y_pred_proba) = names
+    rm(names)
+    
+    names  = paste(parameters$Names.Labels$Labels, "-true", sep="")
+    true = data.frame(y_true)
+    names(y_true) = names 
+    rm(names)
+    
+    names  = paste(parameters$Names.Labels$Labels, "-thr-05", sep="")
+    y_threshold_05 = data.frame(y_threshold_05)
+    names(y_threshold_05) = names 
+    rm(names)
+    
+    names  = paste(parameters$Names.Labels$Labels, "-thr-lc", sep="")
+    y_threshold_card = data.frame(as.matrix(y_threshold_card))
+    names(y_threshold_card) = names 
+    rm(names)
+    
+    all.predictions = cbind(y_true, y_pred_proba,
+                            y_threshold_05, y_threshold_card)
+    write.csv(all.predictions, 
+              paste(FolderSplit, "/folder-predictions.csv", sep=""), 
+              row.names = FALSE)
+    
     
     ##############################################
-    cat("\nInformações das predições")
-    predictions.information(nomes.rotulos=nomes.rotulos, 
-                            proba = y_probas, 
-                            preds = y_preds, 
-                            trues = y_trues, 
-                            folder = FolderSplit)
+    matrix.confusao(true = y_true, pred = y_threshold_05, 
+                    type = "thr-05", salva = FolderSplit, 
+                    nomes.rotulos = parameters$Names.Labels$Labels)
     
-    #####################################################################
-    cat("\nSave original and pruned predictions")
-    pred.o = paste(colnames(y_preds), "-pred", sep="")
-    names(y_preds) = pred.o
-    
-    true.labels = paste(colnames(y_trues), "-true", sep="")
-    names(y_trues) = true.labels
-    
-    proba = paste(colnames(y_probas), "-proba", sep="")
-    names(y_probas) = proba
-    
-    all.predictions = cbind(y_probas, y_preds, y_trues)
-    
-    setwd(FolderSplit)
-    write.csv(all.predictions, "folder-predictions.csv", row.names = FALSE)
+    matrix.confusao(true = y_true, pred = y_threshold_card, 
+                    type = "thr-lc", salva = FolderSplit, 
+                    nomes.rotulos = parameters$Names.Labels$Labels)
     
     
-    #########################################
-    setwd(FolderSplit)
-    unlink(train.file.name)
-    unlink(test.file.name)
-    unlink(val.file.name)
+    #########################################################################    
+    roc.curva(f = f, y_pred = y_pred_proba, test = mldr.teste,
+              Folder = FolderSplit, nome = "pred-proba")
+    
+    roc.curva(f = f, y_pred = y_threshold_card, test = mldr.teste,
+              Folder = FolderSplit, nome = "thr-lc")
+    
+    roc.curva(f = f, y_pred = y_threshold_05, test = mldr.teste,
+              Folder = FolderSplit, nome = "thr-05")
+    
     
     # f = f + 1
     gc()
   }
   
   gc()
-  cat("\n###################################################################")
-  cat("\n# ECC PYTHON: END OF FUNCTION EXECUTE PYTHON                       #")
-  cat("\n###################################################################")
+  cat("\n###############################################")
+  cat("\n# execute.ecc.python END                      #")
+  cat("\n###############################################")
   cat("\n\n")
 }
 
 
 
-##################################################################################################
-# FUNCTION EVALUATE GENERAL                                                                      #
-#   Objective:                                                                                   #
-#       Evaluate Multilabel                                                                      #
-#   Parameters:                                                                                  #
-#       ds: specific dataset information                                                         #
-#       dataset_name: dataset name. It is used to save files.                                    #
-#       number_folds: number of folds to be created                                              #
-#       Folder: folder where the folds are                                                       #
-#   Return:                                                                                      #
-#       Confusion Matrix                                                                         #
-##################################################################################################
-evaluate.ecc.python <- function(ds,
-                                dataset_name,
-                                number_folds,
-                                number_cores,
-                                folderResults){
-  
-  apagar = c(0)
-  resConfMatFinal = data.frame(apagar)
+
+############################################################################
+#
+############################################################################
+evaluate.ecc.python <- function(parameters){
   
   f = 1
-  avaliaParalel <- foreach (f = 1:number_folds) %dopar%{
-    #while(f<=number_folds){
+  avaliaParalel <- foreach (f = 1:parameters$Config.File$Number.Folds) %dopar%{
+    # while(f<=parameters$Config.File$Number.Folds){
     
     #########################################################################
     cat("\nFold: ", f)
     
+    ##########################################################################
     FolderRoot = "~/Ensemble-Classifier-Chains"
     FolderScripts = "~/Ensemble-Classifier-Chains/R"
     
-    #########################################################################
-    setwd(FolderScripts)
-    source("utils.R")
-    
+    ##########################################################################
     setwd(FolderScripts)
     source("libraries.R")
     
-    ####################################################################
-    diretorios = directories(dataset_name, folderResults)
-    
-    ####################################################################
-    FolderSplit = paste(diretorios$folderECC, "/Split-", f, sep="")
-    
-    ####################################################################################
-    # cat("\nAbrindo pred and true")
-    setwd(FolderSplit)
-    y_pred = data.frame(read.csv("y_predict.csv"))
-    y_true = data.frame(read.csv("y_true.csv"))
-    
-    # cat("\nConvertendo em numerico")
-    y_true2 = data.frame(sapply(y_true, function(x) as.numeric(as.character(x))))
-    y_true3 = mldr_from_dataframe(y_true2 , labelIndices = seq(1,ncol(y_true2 )), name = "y_true2")
-    y_pred2 = sapply(y_pred, function(x) as.numeric(as.character(x)))
-    
-    # cat("\nsalvando")
-    salva3 = paste("ConfMatFold-", f, ".txt", sep="")
-    setwd(FolderSplit)
-    sink(file=salva3, type="output")
-    confmat = multilabel_confusion_matrix(y_true3, y_pred2)
-    print(confmat)
-    sink()
-    
-    # cat("\nmatriz de confusão")
-    resConfMat = multilabel_evaluate(confmat)
-    resConfMat = data.frame(resConfMat)
-    names(resConfMat) = paste("Fold-", f, sep="")
-    setwd(FolderSplit)
-    write.csv(resConfMat, "ResConfMat.csv")
+    setwd(FolderScripts)
+    source("utils.R")
     
     
-    ###############################################################
-    conf.mat = data.frame(confmat$TPl, confmat$FPl,
-                          confmat$FNl, confmat$TNl)
-    names(conf.mat) = c("TP", "FP", "FN", "TN")
+    ###########################################################################
+    FolderSplit = paste(parameters$Directories$folderECC, "/Split-", f, sep="")
+    if(dir.exists(FolderSplit)==FALSE){dir.create(FolderSplit)}
     
-    # porcentagem
-    conf.mat.perc = data.frame(conf.mat/nrow(y_true))
-    names(conf.mat.perc) = c("TP.perc", "FP.perc", "FN.perc", "TN.perc")
+    #####################################################################
+    nome.true = paste(FolderSplit, "/y_true.csv", sep="")
+    nome.pred.proba = paste(FolderSplit, "/y_pred_proba.csv", sep="")
+    nome.thr.05 = paste(FolderSplit, "/y_pred_thr05.csv", sep="")
+    nome.thr.LC = paste(FolderSplit, "/y_pred_thrLC.csv", sep="")
     
-    # calculando o total de rótulos classificados errados
-    wrong = conf.mat$FP + conf.mat$FN
-    
-    # calculando a porcentagem de rótulos classificados errados
-    wrong.perc = wrong/nrow(y_true)
-    
-    # calculando o total de rótulos classificados corretamente
-    correct = conf.mat$TP + conf.mat$TN
-    
-    # calculando a porcentagem de rótulos classificados corretamente
-    correct.perc = correct/nrow(y_true)
-    
-    conf.mat = data.frame(conf.mat, conf.mat.perc, wrong, correct, 
-                          wrong.perc, correct.perc)
-    
-    setwd(FolderSplit)
-    write.csv(conf.mat, "utiml-matrix-confusion.csv")
+    #####################################################################
+    y_pred_proba = data.frame(read.csv(nome.pred.proba))
+    y_pred_thr_05 = data.frame(read.csv(nome.thr.05))
+    y_pred_thr_lc = data.frame(read.csv(nome.thr.LC))
+    y_true = data.frame(read.csv(nome.true))
     
     
-    #f = f + 1
+    ##########################################################################
+    y.true.2 = data.frame(sapply(y_true, function(x) as.numeric(as.character(x))))
+    y.true.3 = mldr_from_dataframe(y.true.2, 
+                                   labelIndices = seq(1,ncol(y.true.2)), 
+                                   name = "y.true.2")
+    y_pred_proba = sapply(y_pred_proba, function(x) as.numeric(as.character(x)))
+    y_pred_thr_05 = sapply(y_pred_thr_05, function(x) as.numeric(as.character(x)))
+    y_pred_thr_lc = sapply(y_pred_thr_lc, function(x) as.numeric(as.character(x)))
+    
+    
+    ##########################################################################    
+    avaliacao(f = f, y_true = y.true.3, y_pred = y_pred_proba,
+              salva = FolderSplit, nome = "pred-proba")
+    
+    avaliacao(f = f, y_true = y.true.3, y_pred = y_pred_thr_05,
+              salva = FolderSplit, nome = "thr-05")
+    
+    avaliacao(f = f, y_true = y.true.3, y_pred = y_pred_thr_lc,
+              salva = FolderSplit, nome = "thr-lc")
+    
+    # f = f + 1
     gc()
   }
   
   gc()
-  cat("\n##################################################################################################")
-  cat("\n# END OF THE EVALUATION MISCELLANEOUS FUNCTION                                                   #")
-  cat("\n##################################################################################################")
+  cat("\n##################################")
+  cat("\n# END FUNCTION EVALUATE          #")
+  cat("\n##################################")
   cat("\n\n\n\n")
 }
 
 
 
 
-##################################################################################################
-# FUNCTION GATHER PREDICTS ECC PARTITIONS                                                     #
-#   Objective                                                                                    #
-#      Evaluates the ECC partitions                                                           #
-#   Parameters                                                                                   #
-#       ds: specific dataset information                                                         #
-#       dataset_name: dataset name. It is used to save files.                                    #
-#       number_folds: number of folds created                                                    #
-#       Folder: path of ECC partition results                                                 #
-#   Return                                                                                       #
-#       Assessment measures for each ECC partition                                            #
-##################################################################################################
-gather.eval.ecc.python <- function(ds, 
-                                   dataset_name, 
-                                   number_folds, 
-                                   number_cores, 
-                                   folderResults){
+
+###########################################################################
+#
+###########################################################################
+gather.eval.ecc.python <- function(parameters){
   
-  diretorios = directories(dataset_name, folderResults) 
+  measures = c("accuracy", "average-precision", "clp", "coverage",
+               "F1", "hamming-loss", "macro-AUC", "macro-F1", 
+               "macro-precision", "macro-recall", "margin-loss", 
+               "micro-AUC","micro-F1", "micro-precision",
+               "micro-recall", "mlp", "one-error", "precision", 
+               "ranking-loss", "recall", "subset-accuracy", "wlp")
   
-  retorno = list()
+  folds = c(0)
   
-  # vector with names measures
-  measures = c("accuracy","average-precision","clp","coverage","F1","hamming-loss","macro-AUC",
-               "macro-F1","macro-precision","macro-recall","margin-loss","micro-AUC","micro-F1",
-               "micro-precision","micro-recall","mlp","one-error","precision","ranking-loss",
-               "recall","subset-accuracy","wlp")
+  nomes.preds = c("pred-proba", "thr-05", "thr-lc")
   
-  # dta frame
-  confMatFinal = data.frame(measures)
-  folds = c("")
-  
-  final.proba.micro.auc = c(0)
-  final.proba.macro.auc = c(0)
-  final.proba.auc = c(0)
-  final.proba.ma.mi.auc = c(0)
-  
-  final.pred.micro.auc = c(0)
-  final.pred.macro.auc = c(0)
-  final.pred.auc = c(0)
-  
-  # from fold = 1 to number_labels
-  f = 1
-  while(f<= number_folds){
-    cat("\nFold: ", f)
+  i = 1
+  while(i<=length(nomes.preds)){
     
-    FolderSplit = paste(diretorios$folderECC, "/Split-", f, sep="")
-    setwd(FolderSplit)
+    cat("\n\npredicao: ", i)
     
-    # cat("\n\tOpen ResConfMat ", f)
-    confMat = data.frame(read.csv(paste(FolderSplit, "/ResConfMat.csv", sep="")))
-    names(confMat) = c("Measures", "Fold")
-    confMatFinal = cbind(confMatFinal, confMat$Fold) 
+    final.roc.auc = data.frame()
+    final.roc.auc.micro = data.frame()
+    final.roc.auc.macro = data.frame()
     
-    folds[f] = paste("Fold-", f, sep="")
+    final.auprc.macro = data.frame(fold = c(0), value=c(0))
+    final.auprc.micro = data.frame(fold = c(0), value=c(0))
     
-    #################################
-    proba.auc = data.frame(read.csv("proba-auc.csv"))
-    names(proba.auc) = c("fold", "value")
-    final.proba.auc = rbind(final.proba.auc, proba.auc)
+    final.runtime = data.frame()
+    final.conf.mat = data.frame(measures)
     
-    proba.micro.auc = data.frame(read.csv("proba-micro-auc.csv"))
-    names(proba.micro.auc) = c("fold", "value")
-    final.proba.micro.auc = rbind(final.proba.micro.auc, proba.micro.auc)
     
-    proba.macro.auc = data.frame(read.csv("proba-macro-auc.csv"))
-    names(proba.macro.auc) = c("fold", "value")
-    final.proba.macro.auc = rbind(final.proba.macro.auc, proba.macro.auc)
+    f = 1
+    while(f<=parameters$Config.File$Number.Folds){
+      
+      cat("\nFold: ", f)
+      
+      #########################################################################
+      folderSplit = paste(parameters$Directories$folderECC,
+                          "/Split-", f, sep="")
+      
+      #########################################################################
+      confMat = data.frame(read.csv(paste(folderSplit, "/", nomes.preds[i], 
+                                          "-evaluated.csv", sep="")))
+      names(confMat) = c("Measures", "Fold")
+      
+      #########################################################################
+      confMat[is.na(confMat)] <- 0
+      
+      #########################################################################
+      final.conf.mat = cbind(final.conf.mat, confMat$Fold) 
+      folds[f] = paste("Fold-", f, sep="")
+      
+      #########################################################################
+      roc.auc = data.frame(read.csv(paste(folderSplit, "/", nomes.preds[i], 
+                                          "-roc-auc.csv", sep="")))       
+      final.roc.auc = rbind(final.roc.auc, roc.auc)
+      
+      #########################################################################
+      roc.micro.auc = data.frame(read.csv(paste(folderSplit, "/", nomes.preds[i], 
+                                                "-roc-auc-micro.csv", sep="")))       
+      final.roc.auc.micro = rbind(final.roc.auc.micro, roc.micro.auc)
+      
+      #########################################################################
+      roc.macro.auc = data.frame(read.csv(paste(folderSplit, "/", nomes.preds[i], 
+                                                "-roc-auc-macro.csv", sep="")))       
+      final.roc.auc.macro = rbind(final.roc.auc.macro, roc.macro.auc)
+      
+      #########################################################################
+      auprc = data.frame(read.csv(paste(folderSplit, "/", nomes.preds[i], 
+                                        "-auprc.csv", sep="")))       
+      final.auprc.macro = rbind(final.auprc.macro, 
+                                data.frame(fold = f, value = auprc$Macro.AUPRC))
+      final.auprc.micro = rbind(final.auprc.micro, 
+                                data.frame(fold = f, value = auprc$Micro.AUPRC))
+      
+      #################################
+      runtime = data.frame(read.csv(paste(folderSplit, "/runtime-fold.csv", sep="")))
+      names(runtime) = c("fold", "user.self", "sys.self",
+                         "elapsed","user.child","sys.child")
+      final.runtime = rbind(final.runtime, runtime)
+      
+      #################################
+      f = f + 1
+      gc()
+    } 
     
-    proba.ma.mi.auc = data.frame(read.csv("y_proba_mami.csv"))
-    final.proba.ma.mi.auc = rbind(final.proba.ma.mi.auc, proba.ma.mi.auc)
     
-    ##################
-    pred.auc = data.frame(read.csv("bin-auc.csv"))
-    names(pred.auc) = c("fold", "value")
-    final.pred.auc = rbind(final.pred.auc, pred.auc)
+    names(final.conf.mat) = c("Measures", folds)
+    names(final.roc.auc) = c("Fold", "Value")
+    names(final.roc.auc.micro) = c("Fold", "Value")
+    names(final.roc.auc.macro) = c("Fold", "Value")
+    names(final.auprc.micro) = c("Fold", "Value")
+    names(final.auprc.macro) = c("Fold", "Value")
+    final.auprc.macro = final.auprc.macro[-1,]
+    final.auprc.micro = final.auprc.micro[-1,]
     
-    pred.micro.auc = data.frame(read.csv("bin-micro-auc.csv"))
-    names(pred.micro.auc) = c("fold", "value")
-    final.pred.micro.auc = rbind(final.pred.micro.auc, pred.micro.auc)
+    ###########################################
+    fold = seq(1, parameters$Config.File$Number.Folds, by =1)
     
-    pred.macro.auc = data.frame(read.csv("bin-macro-auc.csv"))
-    names(pred.macro.auc) = c("fold", "value")
-    final.pred.macro.auc = rbind(final.pred.macro.auc, pred.macro.auc)
+    ###########################################
+    names(final.conf.mat) = c("Measures", folds)
+    final.conf.mat[is.na(final.conf.mat)] <- 0
+    write.csv(final.conf.mat, 
+              paste(parameters$Directories$folderECC, "/", nomes.preds[i], 
+                    "-Test-Evaluated.csv", sep=""), 
+              row.names = FALSE)
     
-    f = f + 1
+    #######################
+    media = data.frame(apply(final.conf.mat[,-1], 1, mean))
+    media = cbind(measures, media)
+    names(media) = c("Measures", "Mean10Folds")
+    write.csv(media, 
+              paste(parameters$Directories$folderECC, "/", 
+                    nomes.preds[i], "-Mean10Folds.csv", sep=""), 
+              row.names = FALSE)
+    
+    #######################
+    mediana = data.frame(apply(final.conf.mat[,-1], 1, median))
+    mediana = cbind(measures, mediana)
+    names(mediana) = c("Measures", "Median10Folds")
+    write.csv(mediana, 
+              paste(parameters$Directories$folderECC, "/", 
+                    nomes.preds[i], "-Median10Folds.csv", sep=""), 
+              row.names = FALSE)
+    
+    
+    #######################
+    desvio = data.frame(apply(final.conf.mat[,-1], 1, sd))
+    desvio  = cbind(measures, desvio)
+    names(desvio ) = c("Measures", "Deviation10Folds")
+    write.csv(desvio , 
+              paste(parameters$Directories$folderECC, "/", 
+                    nomes.preds[i], "-Deviation10Folds.csv", sep=""), 
+              row.names = FALSE)
+    
+    ###########################################
+    write.csv(final.roc.auc, 
+              paste(parameters$Directories$folderECC, "/", nomes.preds[i], 
+                    "-roc-auc.csv", sep=""), 
+              row.names = FALSE)
+    
+    ###########################################
+    write.csv(final.roc.auc.micro, 
+              paste(parameters$Directories$folderECC, "/", nomes.preds[i], 
+                    "-roc-auc-micro.csv", sep=""), 
+              row.names = FALSE)
+    
+    ###########################################
+    write.csv(final.roc.auc.macro, 
+              paste(parameters$Directories$folderECC, "/", nomes.preds[i], 
+                    "-roc-auc-macro.csv", sep=""), 
+              row.names = FALSE)
+    
+    ###########################################
+    write.csv(final.auprc.micro, 
+              paste(parameters$Directories$folderECC, "/", nomes.preds[i], 
+                    "-roc-auprc-micro.csv", sep=""), 
+              row.names = FALSE)
+    
+    ###########################################
+    final.runtime$fold = fold
+    write.csv(final.runtime, 
+              paste(parameters$Directories$folderECC, 
+                    "/runtime-folds.csv", sep=""), 
+              row.names = FALSE)
+    
+    ################
+    i = i + 1
     gc()
-  } 
+  }
   
-  cat("\nsave measures")
-  names(confMatFinal) = c("Measures", folds)
-  write.csv(confMatFinal, 
-            paste(diretorios$folderECC, "/All-Folds-ECC.csv", sep=""),
-            row.names = FALSE)
-  
-  
-  fold = seq(1, number_folds, by =1)
-  
-  final.proba.auc = final.proba.auc[-1,]
-  final.proba.auc = data.frame(fold, auc = final.proba.auc$value)
-  
-  final.proba.micro.auc = final.proba.micro.auc[-1,]
-  final.proba.micro.auc = data.frame(fold, micro.auc = final.proba.micro.auc$value)
-  
-  final.proba.macro.auc = final.proba.macro.auc[-1,]
-  final.proba.macro.auc = data.frame(fold, macro.auc = final.proba.macro.auc$value)
-  
-  final.proba.ma.mi.auc = final.proba.ma.mi.auc[-1,]
-  final.proba.ma.mi.auc = data.frame(fold, final.proba.ma.mi.auc)
-  
-  setwd(diretorios$folderECC)
-  write.csv(final.proba.auc, "proba-auc.csv", row.names = FALSE)  
-  write.csv(final.proba.macro.auc, "proba-macro-auc.csv", row.names = FALSE)  
-  write.csv(final.proba.micro.auc, "proba-micro-auc.csv", row.names = FALSE)
-  write.csv(final.proba.ma.mi.auc, "proba-ma-mi-auprc.csv", row.names = FALSE)  
-  
-  #################
-  final.pred.auc = final.pred.auc[-1,]
-  final.pred.auc = data.frame(fold, auc = final.pred.auc$value)
-  
-  final.pred.micro.auc = final.pred.micro.auc[-1,]
-  final.pred.micro.auc = data.frame(fold, micro.auc = final.pred.micro.auc$value)
-  
-  final.pred.macro.auc = final.pred.macro.auc[-1,]
-  final.pred.macro.auc = data.frame(fold, macro.auc = final.pred.macro.auc$value)
-  
-  setwd(diretorios$folderECC)
-  write.csv(final.pred.auc, "bin-auc.csv", row.names = FALSE)  
-  write.csv(final.pred.macro.auc, "bin-macro-auc.csv", row.names = FALSE)  
-  write.csv(final.pred.micro.auc, "bin-micro-auc.csv", row.names = FALSE)
-  
-  # calculando a média dos 10 folds para cada medida
-  media = data.frame(apply(confMatFinal[,-1], 1, mean))
-  media = cbind(measures, media)
-  names(media) = c("Measures", "Mean10Folds")
-  
-  setwd(diretorios$folderECC)
-  write.csv(media, 
-            paste(diretorios$folderECC, "/Mean10Folds.csv", sep=""), 
-            row.names = FALSE)
-  
-  mediana = data.frame(apply(confMatFinal[,-1], 1, median))
-  mediana = cbind(measures, mediana)
-  names(mediana) = c("Measures", "Median10Folds")
-  
-  setwd(diretorios$folderECC)
-  write.csv(mediana, 
-            paste(diretorios$folderECC, "/Median10Folds.csv", sep=""),
-            row.names = FALSE)
-  
-  dp = data.frame(apply(confMatFinal[,-1], 1, sd))
-  dp = cbind(measures, dp)
-  names(dp) = c("Measures", "SD10Folds")
-  
-  setwd(diretorios$folderECC)
-  write.csv(dp,  
-            paste(diretorios$folderECC, "/desvio-padrão-10-folds.csv", sep=""), 
-            row.names = FALSE)
   gc()
-  cat("\n##################################################################################################")
-  cat("\n# PYTHON ECC: END OF THE FUNCTION GATHER EVALUATED                                              #") 
-  cat("\n##################################################################################################")
+  cat("\n########################################################")
+  cat("\n# END EVALUATED                                        #") 
+  cat("\n########################################################")
   cat("\n\n\n\n")
 }
 

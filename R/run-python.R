@@ -42,19 +42,12 @@ FolderScripts = "~/Ensemble-Classifier-Chains/R"
 # number_folds: number of folds for cross validation                                             # 
 # delete: if you want, or not, to delete all folders and files generated                         #
 ######################################################################
-run.ecc.python <- function(ds, 
-                           dataset_name,
-                           number_dataset, 
-                           number_cores, 
-                           number_folds, 
-                           folderResults){
+run.ecc.python <- function(parameters){
   
   setwd(FolderScripts)
   source("ecc-python.R")
   
-  diretorios = directories(dataset_name, folderResults)
-  
-  if(number_cores == 0){
+  if(parameters$Config.File$Number.Cores == 0){
     
     cat("\n\n##########################################################")
     cat("\n# Zero is a disallowed value for number_cores. Please      #")
@@ -63,73 +56,61 @@ run.ecc.python <- function(ds,
     
   } else {
     
-    cl <- parallel::makeCluster(number_cores)
+    cl <- parallel::makeCluster(parameters$Config.File$Number.Cores)
     doParallel::registerDoParallel(cl)
     print(cl)
     
-    if(number_cores==1){
+    if(parameters$Config.File$Number.Cores==1){
       cat("\n\n########################################################")
       cat("\n# Running Sequentially!                                #")
       cat("\n########################################################\n\n")
     } else {
       cat("\n\n############################################################")
-      cat("\n# Running in parallel with ", number_cores, " cores!       #")
+      cat("\n# Running in parallel with ", parameters$Config.File$Number.Cores, " cores! #")
       cat("\n############################################################\n\n")
     }
   }
   
+  
   cl = cl
+  
   retorno = list()
   
-  
-  cat("\n\n######################################################")
-  cat("\n# RUN: Gather Files                                  #")
-  cat("\n######################################################\n\n")
-  time.gather.files = system.time(gather.files.python(ds, 
-                                                      dataset_name,
-                                                      number_dataset, 
-                                                      number_cores, 
-                                                      number_folds, 
-                                                      folderResults))
+  cat("\n\n##################################################")
+  cat("\n# RUN: Names Labels                              #")
+  cat("\n##################################################\n\n")
+  name.file = paste(parameters$Directories$folderNamesLabels, "/",
+                    parameters$Config.File$Dataset.Name,
+                    "-NamesLabels.csv", sep="")
+  labels.names = data.frame(read.csv(name.file))
+  names(labels.names) = c("Index", "Labels")
+  parameters$Names.Labels = labels.names
   
   
   cat("\n\n###################################################")
   cat("\n# RUN: Execute ECC ecc                            #")
   cat("\n###################################################\n\n")
-  time.execute = system.time(execute.ecc.python(ds, 
-                                                dataset_name, 
-                                                number_folds,
-                                                number_cores, 
-                                                folderResults))
+  time.execute = system.time(execute.ecc.python(parameters))
   
   
   cat("\n\n############################################################")
   cat("\n# RUN: Evaluate                                              #")
   cat("\n##############################################################\n\n")
-  time.evaluate = system.time(evaluate.ecc.python(ds, 
-                                                  dataset_name, 
-                                                  number_folds,
-                                                  number_cores, 
-                                                  folderResults))
+  time.evaluate = system.time(evaluate.ecc.python(parameters))
   
   
   cat("\n\n############################################################")
   cat("\n# RUN: Gather Evaluated Measures                             #")
   cat("\n##############################################################\n\n")
-  time.gather.evaluate = system.time(gather.eval.ecc.python(ds, 
-                                                            dataset_name, 
-                                                            number_folds,
-                                                            number_cores, 
-                                                            folderResults))
+  time.gather.evaluate = system.time(gather.eval.ecc.python(parameters))
   
   
   cat("\n\n############################################################")
   cat("\n# RUN: Save Runtime                                          #")
   cat("\n##############################################################\n\n")
-  RunTimeecc = rbind(time.gather.files, time.execute, 
-                     time.evaluate, time.gather.evaluate)
+  RunTimeecc = rbind(time.execute, time.evaluate, time.gather.evaluate)
   setwd(diretorios$folderECC)
-  write.csv(RunTimeecc, paste(dataset_name, "-RunTime-Python.csv", sep=""))
+  write.csv(RunTimeecc, paste(dataset_name, "-Run-RunTime-.csv", sep=""))
   
   
   cat("\n\n############################################################")

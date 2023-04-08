@@ -96,20 +96,10 @@ if __name__ == '__main__':
     
     # setando nome do diretorio e arquivo para salvar
     true = (directory + "/y_true.csv")          # salva os rótulos verdadeiros
-    proba = (directory + "/y_proba.csv")          # salva as predições binárias
+    proba = (directory + "/y_pred_proba.csv")          # salva as predições binárias
     
     # salvando true labels and predict labels
     y_pred_d.to_csv(proba, index=False)
-    y_true_d.to_csv(true, index=False)   
+    y_true_d.to_csv(true, index=False)
     
-    y_true = pd.read_csv(true)
-    y_pred = pd.read_csv(proba)
-    
-    micro = average_precision_score(y_true, y_pred, average = "micro")
-    macro = average_precision_score(y_true, y_pred, average = "macro")
-      
-    y_proba = pd.DataFrame([micro,macro]).T
-    y_proba.columns = ["Micro-AUPRC", "Macro-AUPRC"]
-    name = (directory + "/y_proba_mami.csv")
-    y_proba.to_csv(name, index=False)
     

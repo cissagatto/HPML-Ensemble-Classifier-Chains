@@ -50,7 +50,7 @@ execute.ecc.python <- function(parameters){
   
   f = 1
   PythonEccParalel <- foreach(f = 1:parameters$Config.File$Number.Folds) %dopar%{
-  # while(f<=number_folds){
+  # while(f<=parameters$Config.File$Number.Folds){
     
     #########################################################################
     cat("\nFold: ", f)
@@ -68,6 +68,7 @@ execute.ecc.python <- function(parameters){
     
     ##########################################################################
     FolderSplit = paste(parameters$Directories$folderECC , "/Split-", f, sep="")
+    if(dir.exists(FolderSplit)==FALSE){dir.create(FolderSplit)}
     
     
     ##########################################################################
@@ -249,7 +250,7 @@ execute.ecc.python <- function(parameters){
               Folder = FolderSplit, nome = "thr-05")
     
     
-    # f = f + 1
+    #f = f + 1
     gc()
   }
   

@@ -51,7 +51,7 @@ n = nrow(datasets)
 ###############################################################################
 # CREATING FOLDER TO SAVE CONFIG FILES                                        #
 ###############################################################################
-FolderCF = paste(FolderRoot, "/config-files-laptop", sep="")
+FolderCF = paste(FolderRoot, "/config-files-apptainer", sep="")
 if(dir.exists(FolderCF)==FALSE){dir.create(FolderCF)}
 
 
@@ -104,12 +104,12 @@ while(w<=length(Implementation.1)){
     # write("Dataset_Path, /home/elaine/Datasets", 
     #        file = output.file, append = TRUE)
     
-    write("Dataset_Path, /home/biomal/Datasets", 
+    write("Dataset_Path, /Datasets", 
           file = output.file, append = TRUE)
     
     # directory name - "/scratch/eg-3s-bbc1000"
     # temp.name = paste("/tmp/", name, sep = "")
-     temp.name = paste("/dev/shm/", name, sep = "")
+     temp.name = paste("/tmp/", name, sep = "")
     
     # Absolute path to the folder where temporary processing will be done. 
     # You should use "scratch", "tmp" or "/dev/shm", it will depend on the 
@@ -135,7 +135,7 @@ while(w<=length(Implementation.1)){
     write("Number_Folds, 10", file = output.file, append = TRUE)
     
     # Number of cores to use for parallel processing
-    write("Number_Cores, 1", file = output.file, append = TRUE)
+    write("Number_Cores, 10", file = output.file, append = TRUE)
     
     # finish writing to the configuration file
     close(output.file)
